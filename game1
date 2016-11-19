@@ -1,0 +1,229 @@
+//game.h
+#pragma once
+
+#include "board.h"
+#include "player.h"
+#include <string>
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#define loop(i,u,v) for(int i = u; i <= v; i++)
+#define rloop(i,u,v) for(int i = u; i >= v; i--)
+
+
+class game
+{
+private:
+    int round;
+    player* user[2];
+    board b;
+public:
+
+    game(int mode,int mode2,int game_order)
+    {
+        round = 1;
+        if(mode == 1)//human vs human
+        {
+            user[0] = new Player_Human("player2"); //according to my setting, user[1] is the one who first move
+            user[1] = new Player_Human("player1"); 
+        }
+        else if(mode == 2) // human vs computer
+        {
+            if(mode2 == 2)// human vs weak computer
+            {
+                if(game_order == 1) //human first
+                {
+                    user[1] = new Player_Human("You");
+                    user[0] = new Player_Weak_computer("Weak computer");
+                }
+                else
+                {
+                    user[1] = new Player_Weak_computer("Weak computer");
+                    user[0] = new Player_Human("You");
+                }
+            }
+            else //human vs strong computer
+            {
+               if(game_order == 1) //human first
+                {
+                    user[1] = new Player_Human("You");
+                    user[0] = new Player_Strong_computer("Strong computer");
+                }
+                else
+                {
+                    user[1] = new Player_Strong_computer("Strong computer");
+                    user[0] = new Player_Human("You");
+                }
+            }
+        }
+        else // computer vs computer
+        {
+            if(mode2 == 1) //weak computer vs weak computer
+            {
+
+                user[1] = new Player_Weak_computer("Weak computer1");
+                user[0] = new Player_Weak_computer("Weak computer2");
+            }
+            else if(mode2 == 2)//Weak computer vs strong computer
+            {
+                if(game_order == 1) // weak computer first
+                {
+                    user[1] = new Player_Weak_computer("Weak computer");
+                    user[0] = new Player_Strong_computer("Strong computer");
+                }
+                else
+                {
+                    user[1] = new Player_Strong_computer("Strong computer");
+                    user[0] = new Player_Weak_computer("Weak computer");
+                }
+            }
+            else // Strong computer vs Strong conputer
+            {
+                user[1] = new Player_Strong_computer("Strong computer1");
+                user[0] = new Player_Strong_computer("Strong computer2");
+            }
+        }
+    }
+
+    ~game()
+    {
+        delete *user;
+    }
+
+    int Get_round()
+    {
+        return round;
+    }
+
+    void Add_round()
+    {
+        round++;
+    }
+
+    void move()
+    {
+        b.Draw_board();
+        int move = user[round % 2] -> move(b);
+        int row = (move - 1) / 3 + 1;
+        int col = (move - 1) % 3 + 1;
+        if(b.Get_board(row,col) != 0)  //prevent wrong setting
+        {
+            printf("Wrong setting\n");
+            return ;
+        }
+
+        int hand = user[round % 2] -> Get_hand();
+        b.Set_board(row,col,hand);
+        b.Draw_board();
+    }
+
+    bool Judge(int hand) //true means hand side win,false means he doesn't win but may not lose
+    {
+        bool flag;
+        loop(i,1,3) //check row
+        {
+            flag = true;
+            loop(j,1,3)
+            {
+                if(b.Get_board(i,j) != hand)
+                {
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag == true)
+                return true;
+        }
+
+        loop(i,1,3)       //check column
+        {
+            flag = true;
+            loop(j,1,3)
+            {
+                if(b.Get_board(j,i) != hand)
+                {
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag == true)
+                return true;
+        }
+
+
+        for(int i = 1; i <= 3; i++)  //check diagonal line
+        {
+            bool flag = true;
+            for(int j = 1; j <= 3; j++)
+            {
+                if(b.Get_board(j,i) != hand)
+                {
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag == true)
+                return true;
+        }
+
+        flag = true;
+        for(int i = 1, j = 1; i <= 3; i++,j++)  //check diagonal line
+        {
+            if(b.Get_board(i,j) != hand)
+            {
+                flag = false;
+                break;
+            }
+        }
+        if(flag == true)
+            return true;
+
+        flag = true;
+        for(int i = 1,j = 3; i <= 3; i++,j--)
+        {
+            if(b.Get_board(i,j) != hand)
+            {
+                flag = false;
+                break;
+            }
+        }
+        return flag;
+    }
+
+    int Check_result() // 1 means win, -1 means lose, 0 means not decided yet
+    {
+        if(round < 5)
+            return 2;
+        int hand = user[round % 2] -> Get_hand();
+        if(Judge(hand) == true)
+            return 1;
+        if(Judge(-1 * hand) == true)// -1*hand means the opponent of the hand side
+            return -1;
+        if(round < 9)  // the game doesn't finish
+            return 2;
+        else           // round >= 9 means the game has finished
+            return 0;  // 0 means draw
+    }
+
+    bool Get_result()  //bool to state whether the game has finished
+    {
+        if(this -> Check_result() == 1) //the player of this round wins
+        {
+            cout << user[round % 2] -> Get_name() << " win!" << endl;
+            return true;
+        }
+        else if(this -> Check_result() == -1) //the player of this round loses
+        {
+           cout << user[round % 2 + 1] -> Get_name() << " win!" << endl;
+            return true;
+        }
+        else if(this -> Check_result() == 0)  // the game draws
+        {
+            cout << "Draw!" << endl;
+            return true;
+        }
+        else  // the game hasn't finshed
+            return false;
+    }
+};
