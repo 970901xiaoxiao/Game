@@ -1,0 +1,72 @@
+//board.h
+#pragma once
+#include <cstdio>
+#include <iostream>
+#include <cstdlib>
+using namespace std;
+#define cls() system("cls")
+
+
+class board
+{
+private:
+    int chessboard[4][4]; // for convenience
+public:
+    board()
+    {
+        for(int i = 1; i <= 3; i++)
+        {
+            for(int j = 1; j <= 3; j++)
+                chessboard[i][j] = 0;
+        }
+    }
+    int Get_board(int row,int col) const
+    {
+        if(row < 1 || row > 3)
+            return -2;  //outside the boundary
+        if(col < 1 || row > 3)
+            return -2;
+        return chessboard[row][col];
+    }
+
+    void Set_board(int row,int col,int hand)
+    {
+        if(row > 3 || row < 1 || col > 3 || col < 1) //outside the boundary
+        {
+            printf("outside the boundary\n");
+            return ;
+        }
+        else
+            chessboard[row][col] = hand;
+    }
+
+    void Draw_board() const //draw the current chess board
+    {
+        cls();
+        for(int i = 0; i <= 4; i++)
+        {
+            for(int j = 0; j <= 4; j++)
+            {
+                if(i & 1 == 1)
+                    printf("_");
+                else
+                {
+                    if(j & 1 == 1)
+                        printf("|");
+                    else
+                    {
+                        int row = i / 2 + 1;
+                        int col = j / 2 + 1;
+                        if(chessboard[row][col] == 1) 
+                            printf("O");
+                        else if (chessboard[row][col] == -1)
+                            printf("X");
+                        else
+                            printf(" " );
+                    }
+                }
+            }
+            cout << endl;
+        }
+    }
+};
