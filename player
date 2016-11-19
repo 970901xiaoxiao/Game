@@ -1,0 +1,279 @@
+// player.h
+
+#pragma once
+
+#include "board.h"
+
+
+#define Wrong_input() printf("Wrong input! Please input again.\n")
+
+
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <cstdio>
+class player
+{
+protected:
+    int hand;  //mark that whrther you move first
+    int movement;//the player's current movement
+    string name;
+
+public:
+    static int mark;
+    virtual ~player()
+    {
+        mark--;  //remove a player
+    }
+
+    virtual int move(board) = 0;
+
+    int Get_hand() const
+    {
+        return hand;
+    }
+
+    string Get_name()const
+    {
+        return name;
+    }
+
+
+    bool check(const board b) const
+    {
+        if(movement > 9 || movement < 1)
+            return false;
+        else 
+        {
+            int r = (movement - 1) / 3 + 1;
+            int c = (movement - 1) % 3 + 1;
+            if(b.Get_board(r,c) != 0)
+                return false;
+        }
+
+            return true;
+    }
+};
+
+
+class Player_Human :public player
+{                        // human player
+private:
+
+public:
+    Player_Human(string _name)
+    {
+        movement = 0;
+        mark++;      // add a player
+        hand = pow(-1,mark); 
+        name = _name;
+    }
+
+    void Read_input(const board& b) 
+    {
+        char buf[30];
+        cin.getline(buf,29);
+
+        for(int i = 0; i < strlen(buf); i++)
+        {
+            if(buf[i] >= '1' && buf[i] <= '9') //find out the number in the input
+            {
+                movement = (int)buf[i] - 48; //turn char into int
+                break;
+            }
+        }
+        while(check(b) == false) //check whether the input is legal
+        {
+            Wrong_input();
+            printf("Input again.\n");
+            cin.getline(buf,29);
+            //getchar();
+            for(int i = 0; i < strlen(buf); i++)
+            {
+                if(buf[i] >= '0' && buf[i] <= '9') //find out the number in the input
+                {
+                    movement = (int)buf[i] - 48; //turn char into int
+                    break;
+                }
+            }
+        }
+    }
+
+
+    int move(board b)
+    {
+        printf("Please input your movement[1,9].\n");
+        do
+        {
+            this -> Read_input(b);
+        }
+        while(check(b) == false);
+        return movement;
+    }
+};
+
+
+class Player_Weak_computer : public player
+{                            //randon computer
+public:
+    Player_Weak_computer(string _name)
+    {
+        movement = 0;
+        mark++;
+        name = _name;
+        hand = pow(-1,mark);
+    }
+
+    int move(board b)
+        {
+            int row,col;
+            do
+            {
+                movement = rand() % 9 + 1;
+            }
+            while(check(b) == false);
+            system("pause");
+            return movement;
+        }
+};
+
+class Player_Strong_computer : public player
+{
+private:
+    const int INF,Processing,Draw;//INF = 100,Processing = 10,Draw = 0
+     //INF means max_value,Processing means the game hasn't finshed and we need to search deeper 
+    static int table[][3];
+public:
+    int none[100];
+    Player_Strong_computer(string _name):INF(100),Processing(10),Draw(0)
+    {
+        movement = 0;
+        mark++;
+        name = _name;
+        hand = pow(-1,mark);
+    }
+
+    int Get_game_state(board b)const
+    {
+        int state;
+        int cnt[2];// cnt[0] counts computer side,cnt[1] counts human side
+        bool finish = true;
+
+        int r,c;
+        for(int i = 0; i < 8; i++)
+        {
+            cnt[0] = cnt[1] = 0;
+            for(int j = 0; j < 3; j++)
+            {
+                r = (table[i][j] - 1) / 3 + 1;
+                c = (table[i][j] - 1) % 3 + 1;
+                if(b.Get_board(r,c) == hand)
+                    cnt[0]++;
+                else if(b.Get_board(r,c) == -hand)
+                    cnt[1]++;
+                else//still has position null
+                    finish = false;
+            }
+            if(cnt[0] == 3)
+                return -INF;
+            if(cnt[1] == 3)
+                return INF;
+        }
+        if(finish)
+            return Draw;
+        else
+            return Processing;
+    }
+
+    int Max_search(board b)
+    {
+        int state = this -> Get_game_state(b);
+        if(state != Processing)
+            return state;
+
+        int value,best_value = -INF;
+        for(int i = 1; i <= 3; i++)
+        {
+            for(int j = 1; j <= 3; j++)
+            {
+                if(b.Get_board(i,j) == 0)
+                {
+                    b.Set_board(i,j,-hand);
+                    value = this -> Min_search(b); //to search your max_value = search your opponent's minimun value
+                    if(best_value < value)
+                        best_value = value;
+                    b.Set_board(i,j,0);           //recover the board
+                }
+            }
+        }
+        return best_value;
+    }
+
+    int Min_search(board b)
+    {
+        int state = this -> Get_game_state(b);
+        if(state != Processing)
+            return state;
+
+        int value,best_value = INF;
+        for(int i = 1; i <= 3; i++)
+        {
+            for(int j = 1; j <= 3; j++)
+            {
+                if(b.Get_board(i,j) == 0)
+                {
+                    b.Set_board(i,j,hand);
+                    value = this -> Max_search(b); //to search your min_value = search your opponent's maxmun value
+                    if(best_value > value)
+                        best_value = value;
+                    b.Set_board(i,j,0);             //recover the board
+                }
+            }
+        }
+        return best_value;
+    }
+
+    int find_best_move(board b)
+    {
+
+        int best_value = INF;
+        int index = 0;
+        int best_move[9];
+        for(int i = 1; i <= 9; i++)
+        {
+            int r = (i - 1) / 3 + 1;
+            int c = (i - 1) % 3 + 1;
+            if(b.Get_board(r,c) == 0)
+            {
+                b.Set_board(r,c,hand);
+                int value = Max_search(b);
+                //b.Draw_board();
+                if(value < best_value)
+                {
+                    index = 0;
+                    best_value = value;
+                    best_move[0] = i;
+                }
+                else if(value == best_value)
+                {
+                    best_move[index++] = i;
+                }
+                b.Set_board(r,c,0);
+            }
+        }
+
+        if(index > 0)
+        {
+            index = rand() % index ;
+        }
+        return best_move[index];
+    }
+
+    int move(board b)
+    {
+        movement = find_best_move(b);
+        system("pause");
+        return movement;
+    }
+
+};
