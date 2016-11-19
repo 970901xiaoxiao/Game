@@ -1,0 +1,124 @@
+#include "board.h"
+#include "game.h"
+#include "player.h"
+
+
+#define Wrong_input() printf("Wrong input! Please input again.\n")
+
+
+#include <cmath>
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+
+/*
+#ifdef
+#define loop(i,u,v) for(int i = u; i <= v; i++);
+#define rloop(i,u,v) for(int i = u; i >= v; i--);
+#endif
+*/
+using namespace std;
+int player::mark = 0;//initialize the static parameter of player class
+int Player_Strong_computer:: table [8][3] = { {1,2,3},{4,5,6},{7,8,9},{1,4,7},{2,5,8},{3,6,9},{1,5,9},{3,5,7} };
+
+
+bool Judge_legal_input(char buf[],int min,int max,int& num)
+{
+    for(int i = 0; i < strlen(buf); i++)
+    {
+        int tmp = (int)buf[i] - 48;
+        if(tmp >= min && tmp <= max)
+        {
+            num = tmp;
+            return true;
+        }
+    }
+    return false;
+}
+
+int main()
+{
+    srand(time(NULL));  //set random seed
+    bool state = true; // to decide whethe the user want to play
+    char buf[30];      
+    while(state)
+    {
+        printf("Press any key to start a new game\nPress q to quit\n");
+
+        cin.getline(buf,' ');
+        if(buf[0] == 'q')
+        {
+            state = false;
+            break;
+        }
+
+        int mode = 1; // 1:human vs human 2:human vs computer 3:cmoputer vs cmoputer
+        int mode2 = 1;
+        int order = 1;  //defaut order
+
+        printf("1:human vs human\n");
+        printf("2:human vs computer\n");
+        printf("3:computer vs computer\n");
+
+        cin.getline(buf,' ');
+        while(Judge_legal_input(buf,1,3,mode) == false)
+        {
+            Wrong_input();
+            cin.getline(buf,' ');
+        }
+
+        if(mode == 2)
+        {
+            printf("1:Strong computer\n2:Weak computer\n");
+            cin.getline(buf,' ');
+            while(Judge_legal_input(buf,1,2,mode2) == false)
+            {
+                Wrong_input();
+                cin.getline(buf,' ');
+            }
+
+            printf("1:You play first\n2:Computer play first\n");
+            cin >> buf;
+            while(Judge_legal_input(buf,1,2,order) == false)
+            {
+                Wrong_input();
+                cin.getline(buf,' ');
+            }
+        }
+        else if(mode == 3)
+        {
+            printf("1:Weak computer vs weak computer\n" );
+            printf("2:Weak computer vs strong computer\n" );
+            printf("3:Strong computer vs strong computer\n" );
+            cin.getline(buf,' ');
+            while(Judge_legal_input(buf,1,3,mode2) == false)
+            {
+                Wrong_input();
+                cin.getline(buf,' ');
+            }
+            if(mode2 == 2)
+            {
+                printf("1:Weak computer play first\n");
+                printf("2:Strong computer play first\n");
+                cin.getline(buf,' ');
+                while(Judge_legal_input(buf,1,2,order) == false)
+                {
+                    Wrong_input();
+                    cin.getline(buf,' ');
+                }
+            }
+        }
+        game chess(mode,mode2,order);
+
+        while(chess.Get_round() <= 9)
+        {
+            chess.move();
+            if(chess.Get_result() == true) //the game has finshed
+                break; 
+            chess.Add_round();
+        }
+    }
+    return 0;
+}
